@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Lenda Gélida (RPG Aprimorado)</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Merriweather&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- ESTILOS CSS --- */
+        :root {
+            /* Definindo variáveis CSS para cores e fontes */
+            --bg-dark: #121212;
+            --container-bg: #1e1e1e;
+            --border-color: #007bff; /* Azul vibrante */
+            --text-light: #e0e0e0;
+            --text-secondary: #aaaaaa;
+            --button-bg: #007bff;
+            --button-hover-bg: #0056b3;
+            --button-disabled-bg: #343a40;
+            --hp-low: #dc3545; /* Vermelho */
+            --hp-normal: #28a745; /* Verde */
+            --gold-color: #ffc107; /* Amarelo */
+            --font-primary: 'Cinzel', serif;
+            --font-secondary: 'Merriweather', serif;
+        }
+
+        body {
+            font-family: var(--font-secondary);
+            background: linear-gradient(to bottom, var(--bg-dark), #0a0a0a); /* Gradiente sutil */
+            color: var(--text-light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            overflow-y: auto; /* Para permitir scroll em telas menores */
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 750px; /* Um pouco maior */
+            background-color: var(--container-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 0 30px rgba(0, 123, 255, 0.4); /* Sombra azulada */
+            text-align: center;
+            position: relative;
+            overflow: hidden; /* Para garantir que as decorações fiquem dentro */
+        }
+
+        /* Título do Jogo */
+        h1 {
+            font-family: var(--font-primary);
+            color: #ffffff; /* Branco puro para destaque */
+            text-align: center;
+            padding-bottom: 15px;
+            margin-top: 0;
+            font-size: 2.8em; /* Aumentado */
+            text-shadow: 0 0 10px rgba(0, 123, 255, 0.7); /* Sombra azul no texto */
+            position: relative;
+            z-index: 1; /* Garante que o texto fique acima de decorações */
+        }
+        h1::before, h1::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 80px; /* Largura da linha */
+            height: 2px;
+            background-color: var(--border-color);
+            box-shadow: 0 0 8px var(--border-color);
+            transform: translateY(-50%);
+        }
+        h1::before { left: 0; }
+        h1::after { right: 0; }
+        
+        /* Área de Stats e Logs */
+        #interface {
+            display: flex;
+            flex-wrap: wrap; /* Permite quebrar em linhas em telas menores */
+            gap: 20px;
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #2a2a2a; /* Fundo ligeiramente mais claro */
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        #stats {
+            flex: 1;
+            min-width: 200px; /* Garante tamanho mínimo */
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: #2b3a4a; /* Fundo azul escuro */
+            font-size: 0.95em;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        #battle-log {
+            flex: 2;
+            min-width: 300px; /* Garante tamanho mínimo */
+            background-color: #1a1a1a;
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace; /* Fonte para logs */
+            font-size: 0.85em;
+            overflow-y: auto;
+            max-height: 180px; /* Um pouco maior */
+            white-space: pre-wrap;
+            color: var(--text-secondary);
+            text-align: left; /* Alinha o texto do log à esquerda */
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        
+        .stat-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 3px;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.1); /* Linha sutil */
+        }
+        .stat-line:last-child { border-bottom: none; margin-bottom: 0; }
+
+        .stat-label {
+            color: var(--text-secondary);
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: var(--border-color); /* Padrão azul */
+        }
+        #player-hp.low-hp { color: var(--hp-low); } /* Vida baixa */
+        #player-hp.normal-hp { color: var(--hp-normal); } /* Vida normal */
+        #player-gold { color: var(--gold-color); } /* Ouro */
+        
+        /* Área de Texto Principal e Ações */
+        #game-text {
+            min-height: 100px; /* Maior */
+            padding: 20px;
+            margin-bottom: 25px;
+            background-color: #212121;
+            border: 1px solid #444;
+            border-radius: 8px;
+            font-size: 1.1em; /* Um pouco maior */
+            text-align: left;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.4);
+            white-space: pre-wrap;
+            line-height: 1.6; /* Espaçamento de linha */
+        }
+
+        #actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px; /* Espaçamento entre botões */
+        }
+        
+        #actions button {
+            background-color: var(--button-bg);
+            color: white;
+            border: none;
+            padding: 14px 25px; /* Maior */
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.05em;
+            font-family: var(--font-primary); /* Fonte do título nos botões */
+            letter-spacing: 0.5px;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+            flex-grow: 1; /* Permite que os botões se expandam */
+            max-width: calc(50% - 15px); /* Dois botões por linha em telas maiores */
+        }
+
+        #actions button:hover:not(:disabled) {
+            background-color: var(--button-hover-bg);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 123, 255, 0.5);
+        }
+
+        #actions button:disabled {
+            background-color: var(--button-disabled-bg);
+            cursor: not-allowed;
+            opacity: 0.6;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            #interface {
+                flex-direction: column; /* Pilha os elementos em telas menores */
+            }
+            #stats, #battle-log {
+                min-width: unset; /* Remove min-width */
+                width: 100%;
+            }
+            #actions button {
+                max-width: 100%; /* Botão em linha única */
+            }
+            h1 {
+                font-size: 2em;
+            }
+            h1::before, h1::after {
+                width: 40px; /* Linhas menores no título */
+            }
+        }
+        @media (max-width: 480px) {
+            #game-container {
+                padding: 15px;
+            }
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <h1>A Lenda Gélida</h1>
+        
+        <div id="interface">
+            <div id="stats">
+                <div class="stat-line"><span class="stat-label">Nível:</span> <span id="player-level" class="stat-value">1</span></div>
+                <div class="stat-line"><span class="stat-label">XP:</span> <span id="player-xp" class="stat-value">0/10</span></div>
+                <div class="stat-line"><span class="stat-label">Vida:</span> <span id="player-hp" class="stat-value">100/100</span></div>
+                <div class="stat-line"><span class="stat-label">Ataque Base:</span> <span id="player-attack" class="stat-value">5</span></div>
+                <div class="stat-line"><span class="stat-label">Ouro:</span> <span id="player-gold" class="stat-value">0</span></div>
+                <div class="stat-line"><span class="stat-label">Arma:</span> <span id="player-weapon" class="stat-value">Espada Enferrujada</span></div>
+            </div>
+            
+            <div id="battle-log">Log de Eventos:</div>
+        </div>
+
+        <div id="game-text">Bem-vindo(a) à aventura! Você é um jovem herói em busca da lendária Lâmina Glacial, que dizem estar protegida por um Guardião Espectral nas profundezas da Floresta Congelada. Prepare-se!</div>
+        
+        <div id="actions">
+            </div>
+    </div>
+
+    <script>
+        // --- CÓDIGO JAVASCRIPT ---
+
+        // Elementos DOM
+         const textElement = document.getElementById('game-text');
+        const actionsElement = document.getElementById('actions');
+        const logElement = document.getElementById('battle-log');
+        
+        const hpElement = document.getElementById('player-hp');
+        const goldElement = document.getElementById('player-gold');
+        const weaponElement = document.getElementById('player-weapon');
+        const levelElement = document.getElementById('player-level');
+        const xpElement = document.getElementById('player-xp');
+        const attackElement = document.getElementById('player-attack');
+
+        // Estado do Jogo (Player)
+        let player = {
+            level: 1,
+            xp: 0,
+            xpToNextLevel: 10,
+            hp: 100,
+            maxHp: 100,
+            baseAttack: 5,
+            gold: 0,
+            weaponIndex: 0
+        };
+
+        // Dados do Jogo
+        const weapons = [
+            { name: "Espada Enferrujada", power: 5, cost: 0 },
+            { name: "Adaga Afiada", power: 10, cost: 25 },
+            { name: "Espada Larga", power: 20, cost: 75 },
+            { name: "Lâmina Glacial", power: 50, cost: 500 }
+        ];
+
+        const monsters = [
+            { name: "Goblin Fraco", level: 1, hp: 15, damage: 3, gold: 5, xp: 5 },
+            { name: "Lobo Faminto", level: 3, hp: 30, damage: 8, gold: 15, xp: 10 },
+            { name: "Troll da Neve", level: 5, hp: 60, damage: 15, gold: 30, xp: 25 }
+        ];
+
+        const boss = { name: "Guardião Espectral", level: 10, hp: 200, damage: 30, gold: 100, xp: 100 };
+        const potionCost = 20;
+
+        // Locais do Jogo (Game States)
+        const locations = [
+            {
+                name: "Praça da Aldeia",
+                text: "Você está na praça central da Aldeia Nevasca. O que deseja fazer?",
+                buttons: [
+                    { text: "Ir para a Floresta Congelada", action: 'travel', nextLocation: 1 },
+                    { text: "Visitar a Loja", action: 'travel', nextLocation: 2 },
+                    { text: "Descansar na Aldeia (Cura HP)", action: 'rest' }
+                ]
+            },
+            {
+                name: "Floresta Congelada",
+                text: "A neve é profunda e a floresta é silenciosa e perigosa. Você sente a presença de algo...",
+                buttons: [
+                    { text: "Procurar por monstros", action: 'hunt' },
+                    { text: "Encarar o Guardião Espectral (BOSS)", action: 'startBossFight' },
+                    { text: "Voltar para a Praça da Aldeia", action: 'travel', nextLocation: 0 }
+                ]
+            },
+            {
+                name: "Loja do Ferreiro",
+                text: "O ferreiro barbudo sorri. 'Bem-vindo, viajante! Posso te vender uma arma melhor ou poções de cura.'",
+                buttons: [
+                    { text: `Comprar ${weapons[1].name} (${weapons[1].cost} Ouro)`, action: 'buyWeapon', index: 1, cost: weapons[1].cost },
+                    { text: `Comprar ${weapons[2].name} (${weapons[2].cost} Ouro)`, action: 'buyWeapon', index: 2, cost: weapons[2].cost },
+                    { text: `Comprar Poção (+50 HP - ${potionCost} Ouro)`, action: 'buyPotion', cost: potionCost },
+                    { text: "Voltar para a Praça da Aldeia", action: 'travel', nextLocation: 0 }
+                ]
+            },
+            {
+                name: "Batalha",
+                text: "Você está em combate!",
+                buttons: [
+                    { text: "Atacar!", action: 'fight' },
+                    { text: "Usar Poção (+50 HP)", action: 'usePotionInBattle', cost: potionCost },
+                    { text: "Tentar Fugir", action: 'flee' }
+                ]
+            },
+            {
+                name: "Fim de Jogo",
+                text: "Sua vida chegou ao fim. Recarregue para tentar novamente!",
+                buttons: [
+                    { text: "Recarregar o Jogo", action: 'restart' }
+                ]
+            },
+            {
+                name: "Vitória Final",
+                text: "Você derrotou o Guardião Espectral! A Lâmina Glacial é sua e a aldeia está a salvo. Sua lenda será contada por gerações! ",
+                buttons: [
+                    { text: "Começar uma Nova Aventura", action: 'restart' }
+                ]
+            }
+        ];
+
+        let currentMonster; 
+        let currentLocationIndex = 0;
+
+        // --- FUNÇÕES DE INTERFACE ---
+
+        function appendLog(message) {
+            logElement.textContent += `\n> ${message}`;
+            logElement.scrollTop = logElement.scrollHeight; // Rola para baixo
+        }
+
+        function clearLog() {
+            logElement.textContent = "Log de Eventos:";
+        }
+
+        function updateStats() {
+            hpElement.textContent = `${player.hp}/${player.maxHp}`;
+            goldElement.textContent = player.gold;
+            weaponElement.textContent = weapons[player.weaponIndex].name;
+            attackElement.textContent = player.baseAttack + weapons[player.weaponIndex].power;
+            
+            levelElement.textContent = player.level;
+            xpElement.textContent = `${player.xp}/${player.xpToNextLevel}`;
+
+            // Cores baseadas na vida
+            if (player.hp < player.maxHp * 0.3) {
+                hpElement.classList.remove('normal-hp');
+                hpElement.classList.add('low-hp');
+            } else {
+                hpElement.classList.remove('low-hp');
+                hpElement.classList.add('normal-hp');
+            }
+        }
+
+        function renderLocation(locationIndex) {
+            const previousLocationIndex = currentLocationIndex;
+            currentLocationIndex = locationIndex;
+            const location = locations[locationIndex];
+            textElement.textContent = location.text;
+            actionsElement.innerHTML = ''; 
+            
+            // CORREÇÃO AQUI: Só limpa o log ao SAIR da tela de combate (3) ou loja (2)
+            if (previousLocationIndex === 3 && locationIndex !== 3) {
+                clearLog();
+            }
+            if (previousLocationIndex === 2 && locationIndex !== 2) {
+                clearLog();
+            }
+
+            location.buttons.forEach(buttonData => {
+                const button = document.createElement('button');
+                button.textContent = buttonData.text;
+                button.onclick = () => handleAction(buttonData.action, buttonData);
+                actionsElement.appendChild(button);
+                
+                // Desabilita botões se o jogador não tiver ouro ou já tiver a arma, etc.
+                if (buttonData.action === 'buyWeapon' && player.weaponIndex >= buttonData.index) {
+                    button.disabled = true;
+                    button.textContent += " (Já Possui)";
+                } else if (buttonData.cost && player.gold < buttonData.cost) {
+                    button.disabled = true;
+                    button.textContent += " (Ouro Insuficiente)";
+                } else if (buttonData.action === 'usePotionInBattle' && player.hp === player.maxHp) {
+                    button.disabled = true;
+                    button.textContent += " (Vida Cheia)";
+                }
+            });
+
+            updateStats();
+        }
+
+        function handleAction(action, data) {
+            
+            // CORREÇÃO AQUI: Move a lógica de limpeza do log para dentro de renderLocation
+            // para que a luta (fight) e poções (usePotionInBattle) não limpem o log.
+            
+            switch (action) {
+                case 'travel':
+                    renderLocation(data.nextLocation);
+                    break;
+                case 'rest':
+                    rest();
+                    break;
+                case 'buyWeapon':
+                    buyWeapon(data.index, data.cost);
+                    break;
+                case 'buyPotion':
+                    buyPotion(data.cost);
+                    break;
+                case 'hunt':
+                    startHunt();
+                    break;
+                case 'startBossFight':
+                    startBossFight();
+                    break;
+                case 'fight':
+                    fight();
+                    break;
+                case 'usePotionInBattle':
+                    usePotion(data.cost);
+                    break;
+                case 'flee':
+                    flee();
+                    break;
+                case 'restart':
+                    window.location.reload();
+                    break;
+            }
+        }
+
+        // --- LÓGICAS DO JOGO E COMBATE ---
+
+        function checkLevelUp() {
+            if (player.xp >= player.xpToNextLevel) {
+                player.level++;
+                player.xp -= player.xpToNextLevel;
+                player.xpToNextLevel = Math.floor(player.xpToNextLevel * 1.5); 
+                player.maxHp += 15; 
+                player.baseAttack += 3; 
+                player.hp = player.maxHp; 
+                appendLog(`PARABÉNS! Você subiu para o Nível ${player.level}! Sua Vida e Ataque aumentaram.`);
+                return true; 
+            }
+            return false;
+        }
+
+        function rest() {
+            player.hp = player.maxHp;
+            textElement.textContent = "Você descansou um pouco na Aldeia. Sua Vida foi completamente restaurada!";
+            appendLog("Você descansou na aldeia. HP restaurado.");
+            renderLocation(currentLocationIndex); 
+            updateStats();
+        }
+
+        function buyPotion(cost) {
+            if (player.gold >= cost) {
+                player.gold -= cost;
+                player.hp = Math.min(player.maxHp, player.hp + 50); 
+                textElement.textContent = `Você comprou e bebeu uma poção de cura e recuperou 50 HP. Sua vida está em ${player.hp}/${player.maxHp}.`;
+                appendLog(`Você gastou ${cost} ouro para comprar e usar uma poção (+50 HP).`);
+            } else {
+                textElement.textContent = "Você não tem ouro suficiente para comprar uma poção!";
+                appendLog("Você não tem ouro suficiente para comprar uma poção!");
+            }
+            renderLocation(2); 
+        }
+
+        function usePotion(cost) {
+            if (player.hp === player.maxHp) {
+                 appendLog("Sua vida já está cheia!");
+                 renderLocation(3); // Atualiza botões
+                 return;
+            }
+            if (player.gold >= cost) {
+                player.gold -= cost;
+                const healAmount = 50;
+                player.hp = Math.min(player.maxHp, player.hp + healAmount);
+                appendLog(`Você bebeu uma poção! +${healAmount} HP. (HP Atual: ${player.hp}/${player.maxHp})`);
+                renderLocation(3); 
+            } else {
+                appendLog("Você não tem ouro suficiente para esta poção!");
+                renderLocation(3); // Atualiza botões
+            }
+            updateStats();
+        }
+
+        function buyWeapon(index, cost) {
+            if (player.gold >= cost) {
+                if (player.weaponIndex < index) {
+                    player.gold -= cost;
+                    player.weaponIndex = index;
+                    textElement.textContent = `Parabéns! Você comprou a ${weapons[index].name}. Seu poder aumentou!`;
+                    appendLog(`Você comprou a ${weapons[index].name} por ${cost} ouro.`);
+                } else {
+                    textElement.textContent = `Você já possui uma arma melhor ou igual a ${weapons[index].name}.`;
+                    appendLog(`Você já possui uma arma melhor ou igual a ${weapons[index].name}.`);
+                }
+            } else {
+                textElement.textContent = "Você não tem ouro suficiente para esta arma!";
+                appendLog("Você não tem ouro suficiente para comprar esta arma!");
+            }
+            renderLocation(2); 
+        }
+
+        function startHunt() {
+            const monsterIndex = Math.floor(Math.random() * monsters.length);
+            currentMonster = { ...monsters[monsterIndex] }; 
+
+            textElement.textContent = `Um ${currentMonster.name} (HP: ${currentMonster.hp}) surge na sua frente! É hora de lutar!`;
+            appendLog(`Início do Combate contra ${currentMonster.name} (Nível ${currentMonster.level}).`);
+
+            renderLocation(3); 
+        }
+        
+        function startBossFight() {
+            currentMonster = { ...boss }; 
+            textElement.textContent = `O Guardião Espectral (HP: ${currentMonster.hp}) se manifesta. Esta é a BATALHA FINAL!`;
+            appendLog(`BATALHA FINAL: Guardião Espectral (Nível ${currentMonster.level}). NÃO HÁ COMO FUGIR!`);
+
+            renderLocation(3); 
+
+            // Desabilita o botão "Fugir" para o boss
+            for (let i = 0; i < actionsElement.children.length; i++) {
+                if (actionsElement.children[i].textContent.includes('Fugir')) {
+                    actionsElement.children[i].disabled = true;
+                    actionsElement.children[i].textContent = "Fugir (IMPOSSÍVEL)";
+                    break;
+                }
+            }
+        }
+
+        function fight() {
+            const weaponPower = weapons[player.weaponIndex].power;
+            const playerAttackValue = player.baseAttack + weaponPower;
+            const playerDamage = playerAttackValue + Math.floor(Math.random() * 5); 
+            const monsterDamage = currentMonster.damage + Math.floor(Math.random() * 3); 
+
+            // Ataque do Jogador
+            currentMonster.hp -= playerDamage;
+            appendLog(`Você ataca ${currentMonster.name} e causa ${playerDamage} de dano.`);
+
+            if (currentMonster.hp <= 0) {
+                // Vitória
+                const goldGained = currentMonster.gold;
+                const xpGained = currentMonster.xp;
+                
+                player.gold += goldGained;
+                player.xp += xpGained;
+
+                if (currentMonster.name === boss.name) {
+                    renderLocation(5); 
+                    return;
+                }
+                
+                appendLog(`Você derrotou ${currentMonster.name}! +${goldGained} Ouro, +${xpGained} XP.`);
+                checkLevelUp(); 
+
+                textElement.textContent = "A batalha terminou. O que você fará agora?";
+                renderLocation(1); 
+
+            } else {
+                // Ataque do Monstro
+                player.hp -= monsterDamage;
+                appendLog(`${currentMonster.name} revida e causa ${monsterDamage} de dano em você.`);
+                
+                if (player.hp <= 0) {
+                    player.hp = 0; 
+                    renderLocation(4); 
+                } else {
+                    textElement.textContent = `Seu HP: ${player.hp}/${player.maxHp} | ${currentMonster.name} HP: ${currentMonster.hp}`;
+                    renderLocation(3); 
+                }
+            }
+            updateStats();
+        }
+        
+        function flee() {
+            if (currentMonster.name === boss.name) {
+                appendLog("Você não pode fugir do Guardião Espectral!"); 
+                renderLocation(3);
+                return;
+            }
+            
+            if (Math.random() > 0.6) { 
+                textElement.textContent = "Você conseguiu fugir do combate e volta para a floresta, ileso.";
+                appendLog("Você fugiu com sucesso!");
+                renderLocation(1);
+            } else {
+                const monsterDamage = currentMonster.damage;
+                player.hp -= monsterDamage;
+                appendLog(`FALHA! O ${currentMonster.name} te ataca e causa ${monsterDamage} de dano ao tentar fugir!`);
+                
+                if (player.hp <= 0) {
+                    player.hp = 0;
+                    renderLocation(4);
+                } else {
+                    textElement.textContent = `Seu HP: ${player.hp}/${player.maxHp} | ${currentMonster.name} HP: ${currentMonster.hp}. Continue a lutar ou tente fugir de novo.`;
+                    renderLocation(3); 
+                }
+                updateStats();
+            }
+        }
+
+        // Iniciar o jogo
+        window.onload = () => renderLocation(0);
+
+    </script>
+
+</body>
+</html>
